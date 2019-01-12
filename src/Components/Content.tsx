@@ -1,18 +1,25 @@
-import React, { Component } from "react";
-import { MDBInput, Button } from "mdbreact";
-import {
-  ResolverEngine,
-  GithubResolver,
-  UriResolver,
-  UrlParser
-} from "resolver-engine";
-const resolver = new ResolverEngine();
+import * as React from 'react';
+// import { Button, Input } from 'reactstrap';
+import { GithubResolver, ResolverEngine, UriResolver, UrlParser } from "resolver-engine";
+const { MDBInput, Button, FormInline } = require("mdbreact");
+
+const resolver = new ResolverEngine<string>();
 resolver
   .addResolver(GithubResolver())
   .addResolver(UriResolver())
   .addParser(UrlParser());
-export default class Content extends Component {
-  constructor(props) {
+
+interface Props {
+}
+
+interface State {
+  name: string;
+  url: string;
+  content: string;
+}
+
+export default class Content extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
 
     this.state = {
@@ -22,11 +29,11 @@ export default class Content extends Component {
     };
   }
 
-  handleSubmitForm = event => {
+  handleSubmitForm = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const data = new FormData(event.target);
+    const data = new FormData(event.currentTarget);
 
-    const name = data.get("name");
+    const name = data.get("name") as string;
 
     resolver
       .resolve(name)
@@ -50,25 +57,26 @@ export default class Content extends Component {
         });
       });
 
-    return false;
   };
   render() {
     return (
       <div className="Content">
         <form onSubmit={this.handleSubmitForm}>
+        <FormInline className="md-form mr-auto">
           <MDBInput
             autoFocus
+            placeholder="Name to resolve"
             id="name"
             name="name"
-            value={this.name}
-            label="Name to resolve"
-            onInput={event => {
-              this.setState({ name: event.target.value });
+            value={this.state.name}
+            onInput={(event: React.FormEvent<HTMLInputElement>) => {
+              this.setState({ name: event.currentTarget.value });
             }}
           />
           <Button rounded size="sm" type="submit">
             RESOLVE
           </Button>
+        </FormInline>
         </form>
 
         <div>{this.state.url}</div>
