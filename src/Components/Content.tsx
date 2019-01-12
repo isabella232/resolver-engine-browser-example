@@ -1,9 +1,9 @@
 import * as React from 'react';
 // import { Button, Input } from 'reactstrap';
 import { GithubResolver, ResolverEngine, UriResolver, UrlParser } from "resolver-engine";
-const { MDBInput, Button, FormInline } = require("mdbreact");
+const { MDBInput, MDBContainer, MDBJumbotron, Button, FormInline } = require("mdbreact");
 
-const resolver = new ResolverEngine<string>();
+const resolver = new ResolverEngine<string>({debug: true});
 resolver
   .addResolver(GithubResolver())
   .addResolver(UriResolver())
@@ -31,33 +31,43 @@ export default class Content extends React.Component<Props, State> {
 
   handleSubmitForm = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+
+    this.setState({
+      content: "",
+      url: "",
+    })
+    const data = new FormData(event.target as any);
 
     const name = data.get("name") as string;
 
     resolver
       .resolve(name)
       .then(value => {
+        console.log("Resolved to", value)
         this.setState({ url: value });
 
         try {
           const url = new URL(value);
           resolver.require(url.href).then(content => {
             this.setState({ content: content });
+          }).catch(err => {
+            this.setState({content: "Nothing found at given location"})
           });
         } catch (err) {
-          this.setState({ content: "Not a valid URL" });
+          this.setState({ content: "Unexpected error while resolving" });
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error(err);
         this.setState({
           name: "",
           url: "",
-          content: "Name resolved to nothing interesting"
+          content: "Name resolved to nothing particularly interesting"
         });
       });
-
   };
+
+
   render() {
     return (
       <div className="Content">
@@ -72,6 +82,8 @@ export default class Content extends React.Component<Props, State> {
             onInput={(event: React.FormEvent<HTMLInputElement>) => {
               this.setState({ name: event.currentTarget.value });
             }}
+            className="ResolveBar"
+            containerClass="mt-0 mb-3"
           />
           <Button rounded size="sm" type="submit">
             RESOLVE
@@ -79,9 +91,13 @@ export default class Content extends React.Component<Props, State> {
         </FormInline>
         </form>
 
-        <div>{this.state.url}</div>
+        {!!this.state.url || !!this.state.content ?
+        <div className="Results">
+        {!!this.state.url ? <MDBContainer><pre>{this.state.url}</pre></MDBContainer> : null}
 
-        <div>{this.state.content}</div>
+        {!!this.state.content ? <MDBContainer><MDBJumbotron><pre>{this.state.content}</pre></MDBJumbotron></MDBContainer> : null}
+        </div> : null}
+
       </div>
     );
   }
